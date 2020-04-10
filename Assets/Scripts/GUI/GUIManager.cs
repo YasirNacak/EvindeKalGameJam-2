@@ -32,12 +32,14 @@ namespace Assets.Scripts.GUI
         public List<GUIPanel> ActivePanels;
 
         public MainMenuPanel MainMenuPanel;
+        public InGamePanel InGamePanel;
 
         public void Start()
         {
             DarkTintActiveColor = new Color(0, 0, 0, 0.6f);
             DarkTintInactiveColor = new Color(0, 0, 0, 0);
             MainMenuPanel.Initialize();
+            InGamePanel.Initialize();
         }
 
         public void OpenPanel(GUIPanel panel)
