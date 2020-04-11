@@ -20,9 +20,6 @@ namespace Assets.Scripts.GUI
 
         public virtual void Open()
         {
-            // safety sleep, will be removed
-            Thread.Sleep(150);
-
             gameObject.SetActive(true);
             foreach (var innerObject in InnerObjects)
             {
@@ -32,9 +29,6 @@ namespace Assets.Scripts.GUI
 
         public virtual void Close()
         {
-            // safety sleep, will be removed
-            Thread.Sleep(150);
-
             gameObject.SetActive(false);
             foreach (var innerObject in InnerObjects)
             {

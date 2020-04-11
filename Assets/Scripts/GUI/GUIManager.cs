@@ -33,6 +33,8 @@ namespace Assets.Scripts.GUI
 
         public MainMenuPanel MainMenuPanel;
         public InGamePanel InGamePanel;
+        public WinGamePanel WinGamePanel;
+        public LoseGamePanel LoseGamePanel;
 
         public void Start()
         {
@@ -40,6 +42,8 @@ namespace Assets.Scripts.GUI
             DarkTintInactiveColor = new Color(0, 0, 0, 0);
             MainMenuPanel.Initialize();
             InGamePanel.Initialize();
+            WinGamePanel.Initialize();
+            LoseGamePanel.Initialize();
         }
 
         public void OpenPanel(GUIPanel panel)
@@ -114,15 +118,6 @@ namespace Assets.Scripts.GUI
             {
                 DarkTint.gameObject.SetActive(false);
                 DarkTint.color = DarkTintInactiveColor;
-            }
-        }
-
-        public void Update()
-        {
-            // TODO(yasir): remove
-            if (Input.GetKeyDown(KeyCode.F1))
-            {
-                OpenPanel(MainMenuPanel);
             }
         }
     }

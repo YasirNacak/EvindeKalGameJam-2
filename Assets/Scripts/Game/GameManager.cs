@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using Assets.Scripts.GUI;
+using Assets.Scripts.GUI.Panels;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -54,6 +54,7 @@ namespace Assets.Scripts.Game
 
         private int _cookedPoints;
         private int _spicePoints;
+        private bool _isWinning;
 
         private float _levelTimer;
 
@@ -66,30 +67,68 @@ namespace Assets.Scripts.Game
             else
             {
                 Instance = this;
-                _levelObjects = new LevelObject[LevelHeight, LevelWidth];
-                _bricks = new List<Brick>();
-                _spawnedObjects = new List<SpawnedObject>();
-                _currentLevel = 0;
                 DontDestroyOnLoad(gameObject);
             }
         }
 
         public void Start()
         {
+            _currentLevel = 0;
+            _bricks = new List<Brick>();
+            _levelObjects = new LevelObject[LevelHeight, LevelWidth];
             ResetGame();
             GUIManager.Instance.OpenPanel(GUIManager.Instance.MainMenuPanel);
         }
 
+        private void StopGame()
+        {
+            HasGameStarted = false;
+            GUIManager.Instance.InGamePanel.StopTimerAnimation();
+        }
+
         public void ResetGame()
         {
+            HasGameStarted = false;
             _cookedPoints = 0;
             _spicePoints = 0;
-            _levelTimer = 90.0f;
-            HasGameStarted = false;
+            _levelTimer = Levels[_currentLevel].TimeLimit;
+            _spawnedObjects = new List<SpawnedObject>();
             _spawnedObjects = new List<SpawnedObject>();
             Player.gameObject.SetActive(false);
             GUIManager.Instance.InGamePanel.ClockMeter.transform.eulerAngles = new Vector3(0, 0, 90.75f);
             GUIManager.Instance.InGamePanel.SpicesMeter.GetComponent<Image>().fillAmount = 0.0f;
+            GUIManager.Instance.InGamePanel.Countdown.GetComponent<Text>().color = GUIManager.Instance.InGamePanel.CountdownDefaultColor;
+        }
+
+        public void EndLevel(bool isAdvanced)
+        {
+            var level = Levels[_currentLevel];
+            foreach (var spawnedObject in _spawnedObjects)
+            {
+                spawnedObject.DestroyObject();
+            }
+            LeanTween.scale(Player.gameObject, Vector3.zero, 0.25f).setEaseInSine();
+            LeanTween.move(gameObject, gameObject.transform.position, 0.2f).setOnComplete(() =>
+            {
+                LeanTween.moveY(level.gameObject, -150, 0.25f).setEaseInSine().setOnComplete(() =>
+                {
+                    if (isAdvanced)
+                    {
+                        if (_currentLevel < Levels.Count - 1)
+                        {
+                            _bricks = new List<Brick>();
+                            _levelObjects = new LevelObject[LevelHeight, LevelWidth];
+                            _currentLevel++;
+                        }
+                        else
+                        {
+                            print("max level reached!");
+                        }
+                    }
+                    ResetGame();
+                    StartGame();
+                });
+            });
         }
 
         public void StartGame()
@@ -105,16 +144,20 @@ namespace Assets.Scripts.Game
                     LeanTween.moveY(level.gameObject, 1, 0.2f).setEaseOutSine().setOnComplete(() =>
                     {
                         level.Bricks.SetActive(true);
+                        Player.transform.position = new Vector3(-20f, -43f, 90f);
                         var (i, j) = WorldToGrid(Player.transform.position);
                         _playerI = i;
                         _playerJ = j;
                         LeanTween.moveY(Player.gameObject, -53.0f, 0.0f).setOnComplete(() =>
                         {
                             Player.gameObject.SetActive(true);
+                            Player.transform.localScale = Vector3.one;
                             LeanTween.moveY(Player.gameObject, -43.0f, 0.25f).setEaseOutSine();
                             _cookedPoints = 0;
                             _spicePoints = 0;
                             HasGameStarted = true;
+                            _isWinning = false;
+                            GUIManager.Instance.InGamePanel.StartTimerAnimation();
                         });
                         
                         StartCoroutine(SpawnLevelObjectPeriodically(LevelObject.Fire, 1.5f));
@@ -126,13 +169,13 @@ namespace Assets.Scripts.Game
 
         public void FixedUpdate()
         {
-            if (Input.GetKeyDown(KeyCode.O))
+            if (Input.GetKeyDown(KeyCode.F1))
             {
-                StartGame();
-            }
-            else if (Input.GetKeyDown(KeyCode.P))
-            {
-                ResetGame();
+                GUIManager.Instance.OpenPanel(GUIManager.Instance.WinGamePanel);
+                LeanTween.scale(gameObject, Vector3.one, GUIManager.Instance.TransitionTime * 2.0f).setOnComplete(() =>
+                {
+                    GUIManager.Instance.WinGamePanel.AnimateChefHats(2);
+                });
             }
 
             if (!HasGameStarted) return;
@@ -141,17 +184,64 @@ namespace Assets.Scripts.Game
 
             GUIManager.Instance.InGamePanel.CountdownText.text = SecondsToClockString(_levelTimer);
 
-            // todo: check if timer has finished
+            if (_levelTimer <= 10.0f)
+            {
+                GUIManager.Instance.InGamePanel.CountdownText.color = GUIManager.Instance.InGamePanel.CountdownCriticalColor;
+            }
+
+            if (_levelTimer <= 0.1f)
+            {
+                StopGame();
+
+                if (_isWinning)
+                {
+                    GUIManager.Instance.OpenPanelOnTop(GUIManager.Instance.WinGamePanel);
+                    LeanTween.scale(gameObject, Vector3.one, GUIManager.Instance.TransitionTime * 2.0f).setOnComplete(() =>
+                    {
+                        GUIManager.Instance.WinGamePanel.AnimateChefHats(_spicePoints / 200);
+                    });
+                    print("you win");
+                }
+                else
+                {
+                    if (_spicePoints < 200)
+                    {
+                        GUIManager.Instance.LoseGamePanel.SetSubText(LoseGamePanel.LoseReason.Spices);
+                    }
+                    else
+                    {
+                        GUIManager.Instance.LoseGamePanel.SetSubText(LoseGamePanel.LoseReason.Cook);
+                    }
+                    GUIManager.Instance.OpenPanelOnTop(GUIManager.Instance.LoseGamePanel);
+                    print("you lose");
+                }
+            }
 
             if (_levelObjects[_playerI, _playerJ].Equals(LevelObject.Fire))
             {
                 _cookedPoints++;
+
+                if (_cookedPoints >= 330)
+                {
+                    StopGame();
+                    print("you lose");
+                    _isWinning = false;
+                    GUIManager.Instance.LoseGamePanel.SetSubText(LoseGamePanel.LoseReason.Burn);
+                    GUIManager.Instance.OpenPanelOnTop(GUIManager.Instance.LoseGamePanel);
+                }
                 GUIManager.Instance.InGamePanel.ClockMeter.transform.Rotate(0, 0, -720f / 1000f);
             }
-            else if (_levelObjects[_playerI, _playerJ].Equals(LevelObject.Spice))
+            else if (_spicePoints < 600 && _levelObjects[_playerI, _playerJ].Equals(LevelObject.Spice))
             {
                 _spicePoints++;
-                GUIManager.Instance.InGamePanel.SpicesMeterImage.fillAmount = _spicePoints / 500.0f;
+                GUIManager.Instance.InGamePanel.SpicesMeterImage.fillAmount = _spicePoints / 600.0f;
+            }
+
+            if (_cookedPoints >= 250 && _spicePoints >= 200 && !_isWinning)
+            {
+                _isWinning = true;
+                _levelTimer = 10;
+                GUIManager.Instance.InGamePanel.SpawnCookedText();
             }
         }
 
@@ -299,13 +389,13 @@ namespace Assets.Scripts.Game
                 return;
             }
 
-            bool canMove = false;
+            bool canMove = true;
 
             switch (d)
             {
                 case Direction.Left:
                 {
-                    if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
+                    /*if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
                         (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
@@ -323,18 +413,18 @@ namespace Assets.Scripts.Game
                     else if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Spice))
                     {
                         canMove = true;
-                    }
+                    }*/
 
                     if (canMove)
                     {
-                        LeanTween.moveLocalX(Player.gameObject, Player.transform.position.x - 8, 0.1f);
+                        LeanTween.moveLocalX(Player.gameObject, Player.transform.position.x - 8, 0.070f);
                         _playerJ--;
                     }
                     break;
                 }
                 case Direction.Right:
                 {
-                    if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
+                    /*if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
                         (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
@@ -352,18 +442,18 @@ namespace Assets.Scripts.Game
                     else if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Spice))
                     {
                         canMove = true;
-                    }
+                    }*/
 
                     if (canMove)
                     {
-                        LeanTween.moveLocalX(Player.gameObject, Player.transform.position.x + 8, 0.1f);
+                        LeanTween.moveLocalX(Player.gameObject, Player.transform.position.x + 8, 0.070f);
                         _playerJ++;
                     }
                     break;
                 }
                 case Direction.Up:
                 {
-                    if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
+                    /*if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
                         (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
@@ -381,18 +471,18 @@ namespace Assets.Scripts.Game
                     else if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Spice))
                     {
                         canMove = true;
-                    }
+                    }*/
 
                     if (canMove)
                     {
-                        LeanTween.moveLocalY(Player.gameObject, Player.transform.position.y + 8, 0.1f);
+                        LeanTween.moveLocalY(Player.gameObject, Player.transform.position.y + 8, 0.070f);
                         _playerI--;
                     }
                     break;
                 }
                 case Direction.Down:
                 {
-                    if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
+                    /*if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
                         (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
@@ -410,11 +500,11 @@ namespace Assets.Scripts.Game
                     else if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Spice))
                     {
                         canMove = true;
-                    }
+                    }*/
 
                     if (canMove)
                     {
-                        LeanTween.moveLocalY(Player.gameObject, Player.transform.position.y - 8, 0.1f);
+                        LeanTween.moveLocalY(Player.gameObject, Player.transform.position.y - 8, 0.070f);
                         _playerI++;
                     }
                     break;

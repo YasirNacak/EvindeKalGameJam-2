@@ -6,5 +6,6 @@ namespace Assets.Scripts.Game
     {
         public GameObject Bricks;
         public GameObject LevelSprite;
+        public float TimeLimit;
     }
 }

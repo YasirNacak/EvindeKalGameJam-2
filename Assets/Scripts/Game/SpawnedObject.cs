@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace Assets.Scripts.Game
@@ -20,11 +21,13 @@ namespace Assets.Scripts.Game
         private IEnumerator Burn()
         {
             yield return new WaitForSeconds(_aliveSeconds);
+            DestroyObject();
+        }
+
+        public void DestroyObject()
+        {
             GameManager.Instance.DestroyLevelObject(_iCoord, _jCoord);
-            if (gameObject != null)
-            {
-                Destroy(gameObject);
-            }
+            gameObject.GetComponent<SpriteRenderer>().enabled = false;
         }
     }
 }
