@@ -32,6 +32,7 @@ namespace Assets.Scripts.GUI
         public List<GUIPanel> ActivePanels;
 
         public MainMenuPanel MainMenuPanel;
+        public HowToPlayPanel HowToPlayPanel;
         public InGamePanel InGamePanel;
         public WinGamePanel WinGamePanel;
         public LoseGamePanel LoseGamePanel;
@@ -41,6 +42,7 @@ namespace Assets.Scripts.GUI
             DarkTintActiveColor = new Color(0, 0, 0, 0.6f);
             DarkTintInactiveColor = new Color(0, 0, 0, 0);
             MainMenuPanel.Initialize();
+            HowToPlayPanel.Initialize();
             InGamePanel.Initialize();
             WinGamePanel.Initialize();
             LoseGamePanel.Initialize();

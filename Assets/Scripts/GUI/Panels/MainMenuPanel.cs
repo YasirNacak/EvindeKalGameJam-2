@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Assets.Scripts.Game;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Assets.Scripts.GUI.Panels
 {
@@ -23,6 +24,10 @@ namespace Assets.Scripts.GUI.Panels
 
         public Vector3 PlayButtonSmallScale;
 
+        public List<Sprite> PlayButtonStages;
+
+        private int _clicks;
+
         public void Awake()
         {
             IsInitialized = false;
@@ -41,6 +46,8 @@ namespace Assets.Scripts.GUI.Panels
             HowToPlayButtonDefaultY = HowToPlayButtonRectTransform.anchoredPosition.y;
 
             InnerObjects = new List<GameObject> { TitleText, PlayButton, PlayText };
+
+            _clicks = 0;
 
             IsInitialized = true;
         }
@@ -79,9 +86,19 @@ namespace Assets.Scripts.GUI.Panels
 
         public void OnPlayButtonClicked()
         {
-            Close();
-            GUIManager.Instance.OpenPanel(GUIManager.Instance.InGamePanel);
-            GameManager.Instance.StartGame();
+            _clicks++;
+
+            if (_clicks == 3)
+            {
+                Close();
+                GUIManager.Instance.OpenPanel(GUIManager.Instance.InGamePanel);
+                GameManager.Instance.StartGame();
+            }
+            else
+            {
+                PlayButton.GetComponent<Image>().sprite = PlayButtonStages[_clicks];
+            }
+
         }
         public void OnPlayButtonPointerDown()
         {
@@ -95,7 +112,7 @@ namespace Assets.Scripts.GUI.Panels
 
         public void OnHowToPlayButtonClicked()
         {
-            // todo: add how to play panel and open it
+            GUIManager.Instance.OpenPanel(GUIManager.Instance.HowToPlayPanel);
         }
 
         public void OnHowToPlayButtonPointerDown()

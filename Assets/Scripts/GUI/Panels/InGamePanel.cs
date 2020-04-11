@@ -11,6 +11,7 @@ namespace Assets.Scripts.GUI.Panels
         public GameObject ClockMeter;
         public GameObject SpicesBase;
         public GameObject SpicesMeter;
+        public GameObject SpicesMeterDark;
         public GameObject Countdown;
         public GameObject CookedText;
         public GameObject DontBurnText;
@@ -19,6 +20,7 @@ namespace Assets.Scripts.GUI.Panels
         private RectTransform _clockMeterRectTransform;
         private RectTransform _spicesBaseRectTransform;
         private RectTransform _spicesMeterRectTransform;
+        private RectTransform _spicesMeterDarkRectTransform;
         private RectTransform _countdownRectTransform;
         private RectTransform _cookedTextRectTransform;
         private RectTransform _dontBurnTextRectTransform;
@@ -27,6 +29,7 @@ namespace Assets.Scripts.GUI.Panels
         private float _clockMeterDefaultY;
         private float _spicesBaseDefaultY;
         private float _spicesMeterDefaultY;
+        private float _spicesMeterDarkDefaultY;
         private float _countdownDefaultY;
 
         public Color CountdownDefaultColor;
@@ -52,6 +55,7 @@ namespace Assets.Scripts.GUI.Panels
             _clockMeterRectTransform = ClockMeter.GetComponent<RectTransform>();
             _spicesBaseRectTransform = SpicesBase.GetComponent<RectTransform>();
             _spicesMeterRectTransform = SpicesMeter.GetComponent<RectTransform>();
+            _spicesMeterDarkRectTransform = SpicesMeterDark.GetComponent<RectTransform>();
             _cookedTextRectTransform = CookedText.GetComponent<RectTransform>();
             _dontBurnTextRectTransform = DontBurnText.GetComponent<RectTransform>();
             _countdownRectTransform = Countdown.GetComponent<RectTransform>();
@@ -60,6 +64,7 @@ namespace Assets.Scripts.GUI.Panels
             _clockMeterDefaultY = _clockMeterRectTransform.anchoredPosition.y;
             _spicesBaseDefaultY = _spicesBaseRectTransform.anchoredPosition.y;
             _spicesMeterDefaultY = _spicesMeterRectTransform.anchoredPosition.y;
+            _spicesMeterDarkDefaultY = _spicesMeterDarkRectTransform.anchoredPosition.y;
             _countdownDefaultY = _countdownRectTransform.anchoredPosition.y;
 
             InnerObjects = new List<GameObject>() { ClockBase, ClockMeter, SpicesBase, SpicesMeter, Countdown, CookedText, DontBurnText };
@@ -74,6 +79,7 @@ namespace Assets.Scripts.GUI.Panels
             LeanTween.moveY(_clockMeterRectTransform, _clockMeterDefaultY + 600, 0);
             LeanTween.moveY(_spicesBaseRectTransform, _spicesBaseDefaultY + 600, 0);
             LeanTween.moveY(_spicesMeterRectTransform, _spicesMeterDefaultY + 600, 0);
+            LeanTween.moveY(_spicesMeterDarkRectTransform, _spicesMeterDarkDefaultY + 600, 0);
             LeanTween.moveY(_countdownRectTransform, _countdownDefaultY + 600, 0);
             LeanTween.move(gameObject, gameObject.transform.position, 0).setOnComplete(() =>
             {
@@ -82,6 +88,7 @@ namespace Assets.Scripts.GUI.Panels
                 LeanTween.moveY(_clockMeterRectTransform, _clockMeterDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
                 LeanTween.moveY(_spicesBaseRectTransform, _spicesBaseDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
                 LeanTween.moveY(_spicesMeterRectTransform, _spicesMeterDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
+                LeanTween.moveY(_spicesMeterDarkRectTransform, _spicesMeterDarkDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
                 LeanTween.moveY(_countdownRectTransform, _countdownDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
             });
         }
@@ -92,6 +99,7 @@ namespace Assets.Scripts.GUI.Panels
             LeanTween.moveY(_clockMeterRectTransform, _clockMeterDefaultY + 600, GUIManager.Instance.TransitionTime).setEaseInSine();
             LeanTween.moveY(_spicesBaseRectTransform, _spicesBaseDefaultY + 600, GUIManager.Instance.TransitionTime).setEaseInSine();
             LeanTween.moveY(_spicesMeterRectTransform, _spicesMeterDefaultY + 600, GUIManager.Instance.TransitionTime).setEaseInSine();
+            LeanTween.moveY(_spicesMeterDarkRectTransform, _spicesMeterDarkDefaultY + 600, GUIManager.Instance.TransitionTime).setEaseInSine();
             LeanTween.moveY(_countdownRectTransform, _countdownDefaultY + 600, GUIManager.Instance.TransitionTime).setEaseInSine();
             LeanTween.move(gameObject, gameObject.transform.position, GUIManager.Instance.TransitionWaitTime).setOnComplete(() =>
             {
@@ -100,6 +108,7 @@ namespace Assets.Scripts.GUI.Panels
                 LeanTween.moveY(_clockMeterRectTransform, _clockMeterDefaultY, 0);
                 LeanTween.moveY(_spicesBaseRectTransform, _spicesBaseDefaultY, 0);
                 LeanTween.moveY(_spicesMeterRectTransform, _spicesMeterDefaultY, 0);
+                LeanTween.moveY(_spicesMeterDarkRectTransform, _spicesMeterDarkDefaultY, 0);
                 LeanTween.moveY(_countdownRectTransform, _countdownDefaultY, 0);
             });
         }
