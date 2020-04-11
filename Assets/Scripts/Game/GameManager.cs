@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.ComTypes;
+using System.Globalization;
 using Assets.Scripts.GUI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,7 +17,8 @@ namespace Assets.Scripts.Game
             Empty,
             Brick,
             Player,
-            Fire
+            Fire,
+            Spice
         }
 
         public enum Direction
@@ -30,11 +31,13 @@ namespace Assets.Scripts.Game
 
         public static GameManager Instance { get; private set; }
 
-        public bool IsRunning;
+        public bool HasGameStarted;
 
         public Player Player;
 
-        private LevelObject[,] _level;
+        private int _currentLevel;
+        public List<Level> Levels;
+        private LevelObject[,] _levelObjects;
 
         public int LevelWidth;
         public int LevelHeight;
@@ -43,11 +46,16 @@ namespace Assets.Scripts.Game
         private int _playerJ;
 
         private List<Brick> _bricks;
+        private List<SpawnedObject> _spawnedObjects;
 
         public GameObject SpawnerParent;
         public GameObject FirePrefab;
+        public List<GameObject> SpicePrefabs;
 
-        private int _playerPoints;
+        private int _cookedPoints;
+        private int _spicePoints;
+
+        private float _levelTimer;
 
         public void Awake()
         {
@@ -58,29 +66,103 @@ namespace Assets.Scripts.Game
             else
             {
                 Instance = this;
-                _level = new LevelObject[LevelHeight, LevelWidth];
+                _levelObjects = new LevelObject[LevelHeight, LevelWidth];
                 _bricks = new List<Brick>();
+                _spawnedObjects = new List<SpawnedObject>();
+                _currentLevel = 0;
                 DontDestroyOnLoad(gameObject);
             }
         }
 
         public void Start()
         {
-            var (i, j) = WorldToGrid(Player.transform.position);
-            _playerI = i;
-            _playerJ = j;
-            _playerPoints = 0;
-            IsRunning = true;
-            StartCoroutine(FireBrick());
+            ResetGame();
+            GUIManager.Instance.OpenPanel(GUIManager.Instance.MainMenuPanel);
         }
 
-        public void Update()
+        public void ResetGame()
         {
-            if (_level[_playerI, _playerJ].Equals(LevelObject.Fire))
+            _cookedPoints = 0;
+            _spicePoints = 0;
+            _levelTimer = 90.0f;
+            HasGameStarted = false;
+            _spawnedObjects = new List<SpawnedObject>();
+            Player.gameObject.SetActive(false);
+            GUIManager.Instance.InGamePanel.ClockMeter.transform.eulerAngles = new Vector3(0, 0, 90.75f);
+            GUIManager.Instance.InGamePanel.SpicesMeter.GetComponent<Image>().fillAmount = 0.0f;
+        }
+
+        public void StartGame()
+        {
+            var level = Levels[_currentLevel];
+            
+            LeanTween.move(gameObject, gameObject.transform.position, GUIManager.Instance.TransitionWaitTime).setOnComplete(() =>
             {
-                _playerPoints++;
+                LeanTween.moveY(level.gameObject, -100, 0.0f).setOnComplete(() =>
+                {
+                    level.gameObject.SetActive(true);
+                    level.LevelSprite.SetActive(true);
+                    LeanTween.moveY(level.gameObject, 1, 0.2f).setEaseOutSine().setOnComplete(() =>
+                    {
+                        level.Bricks.SetActive(true);
+                        var (i, j) = WorldToGrid(Player.transform.position);
+                        _playerI = i;
+                        _playerJ = j;
+                        LeanTween.moveY(Player.gameObject, -53.0f, 0.0f).setOnComplete(() =>
+                        {
+                            Player.gameObject.SetActive(true);
+                            LeanTween.moveY(Player.gameObject, -43.0f, 0.25f).setEaseOutSine();
+                            _cookedPoints = 0;
+                            _spicePoints = 0;
+                            HasGameStarted = true;
+                        });
+                        
+                        StartCoroutine(SpawnLevelObjectPeriodically(LevelObject.Fire, 1.5f));
+                        StartCoroutine(SpawnLevelObjectPeriodically(LevelObject.Spice, 2.5f));
+                    });
+                });
+            });
+        }
+
+        public void FixedUpdate()
+        {
+            if (Input.GetKeyDown(KeyCode.O))
+            {
+                StartGame();
+            }
+            else if (Input.GetKeyDown(KeyCode.P))
+            {
+                ResetGame();
+            }
+
+            if (!HasGameStarted) return;
+
+            _levelTimer -= Time.deltaTime;
+
+            GUIManager.Instance.InGamePanel.CountdownText.text = SecondsToClockString(_levelTimer);
+
+            // todo: check if timer has finished
+
+            if (_levelObjects[_playerI, _playerJ].Equals(LevelObject.Fire))
+            {
+                _cookedPoints++;
                 GUIManager.Instance.InGamePanel.ClockMeter.transform.Rotate(0, 0, -720f / 1000f);
             }
+            else if (_levelObjects[_playerI, _playerJ].Equals(LevelObject.Spice))
+            {
+                _spicePoints++;
+                GUIManager.Instance.InGamePanel.SpicesMeterImage.fillAmount = _spicePoints / 500.0f;
+            }
+        }
+
+        private string SecondsToClockString(float s)
+        {
+            var sRounded = Mathf.Round(s);
+            var m = (int)(sRounded / 60.0f);
+            var remS = (int) sRounded - (m * 60);
+            var minStr = $"{m:D2}";
+            var secStr = $"{remS:D2}";
+            return minStr + ":" + secStr;
         }
 
         private Tuple<int, int> WorldToGrid(Vector2 v)
@@ -100,7 +182,7 @@ namespace Assets.Scripts.Game
             return i < LevelHeight && i >= 0 && j < LevelWidth && j >= 0;
         }
 
-        private void SpawnFire()
+        private void SpawnLevelObject(LevelObject objectType)
         {
             while (true)
             {
@@ -113,51 +195,65 @@ namespace Assets.Scripts.Game
 
                 var direction = Random.Range(0, 4);
 
-                int deltaI = 0;
-                int deltaJ = 0;
-                int rotX = 0;
-                int rotZ = 0;
+                int deltaI = 0, deltaJ = 0, rotX = 0, rotZ = 0;
 
                 if (direction == 0)
                 {
-                    deltaI = 0;
-                    deltaJ = 1;
-                    rotX = 0;
-                    rotZ = -90;
+                    deltaI = 0; deltaJ = 1; rotX = 0; rotZ = -90;
                 }
                 else if (direction == 1)
                 {
-                    deltaI = 0;
-                    deltaJ = -1;
-                    rotX = 0;
-                    rotZ = 90;
+                    deltaI = 0; deltaJ = -1; rotX = 0; rotZ = 90;
                 }
                 else if (direction == 2)
                 {
-                    deltaI = 1;
-                    deltaJ = 0;
-                    rotX = 180;
-                    rotZ = 0;
+                    deltaI = 1; deltaJ = 0; rotX = 180; rotZ = 0;
                 }
                 else if (direction == 3)
                 {
-                    deltaI = -1;
-                    deltaJ = 0;
-                    rotX = 0;
-                    rotZ = 0;
+                    deltaI = -1; deltaJ = 0; rotX = 0; rotZ = 0;
                 }
 
                 if (IsCoordinateValid(currentI + deltaI, currentJ + deltaJ) &&
-                    _level[currentI + deltaI, currentJ + deltaJ].Equals(LevelObject.Empty))
+                    _levelObjects[currentI + deltaI, currentJ + deltaJ].Equals(LevelObject.Empty))
                 {
-                    var fire = Instantiate(FirePrefab, SpawnerParent.transform);
-                    var (i, j) = GridToWorld(currentI + deltaI, currentJ + deltaJ);
-                    fire.transform.position = new Vector3(i, j + 1, 90);
-                    fire.transform.Rotate(rotX, 0, rotZ);
-                    var fireC = fire.GetComponent<Fire>();
-                    fireC.Init(currentI + deltaI, currentJ + deltaJ);
-                    _level[currentI + deltaI, currentJ + deltaJ] = LevelObject.Fire;
-                    hasSpawned = true;
+                    GameObject prefab = null;
+                    float aliveSeconds = 0.0f;
+                    switch (objectType)
+                    {
+                        case LevelObject.Fire:
+                        {
+                            prefab = FirePrefab;
+                            aliveSeconds = 3.5f;
+                            _levelObjects[currentI + deltaI, currentJ + deltaJ] = LevelObject.Fire;
+                            break;
+                        }
+                        case LevelObject.Spice:
+                        {
+                            var spiceIndex = Random.Range(0, SpicePrefabs.Count);
+                            prefab = SpicePrefabs[spiceIndex];
+                            aliveSeconds = 2.0f;
+                            _levelObjects[currentI + deltaI, currentJ + deltaJ] = LevelObject.Spice;
+                            break;
+                        }
+                        default:
+                        {
+                            Debug.LogError("Unknown object to spawn.");
+                            break;
+                        }
+                    }
+
+                    if (prefab != null)
+                    {
+                        var obj = Instantiate(prefab, SpawnerParent.transform);
+                        var (i, j) = GridToWorld(currentI + deltaI, currentJ + deltaJ);
+                        obj.transform.position = new Vector3(i, j + 1, 90);
+                        obj.transform.Rotate(rotX, 0, rotZ);
+                        var sObj = obj.GetComponent<SpawnedObject>();
+                        sObj.Initialize(currentI + deltaI, currentJ + deltaJ, aliveSeconds);
+                        _spawnedObjects.Add(sObj);
+                        hasSpawned = true;
+                    }
                 }
 
                 if (!hasSpawned)
@@ -169,20 +265,20 @@ namespace Assets.Scripts.Game
             }
         }
 
-        public void DestroyFire(int iCoord, int jCoord)
+        public void DestroyLevelObject(int iCoord, int jCoord)
         {
-            _level[iCoord, jCoord] = LevelObject.Empty;
+            _levelObjects[iCoord, jCoord] = LevelObject.Empty;
         }
 
-        private IEnumerator FireBrick()
+        private IEnumerator SpawnLevelObjectPeriodically(LevelObject lo, float period)
         {
-            yield return new WaitForSeconds(1.0f);
+            var noisyPeriod = Random.Range(period - 0.5f, period + 0.5f);
+            yield return new WaitForSeconds(noisyPeriod);
 
-            SpawnFire();
-
-            if (IsRunning)
+            if (HasGameStarted)
             {
-                StartCoroutine(FireBrick());
+                SpawnLevelObject(lo);
+                StartCoroutine(SpawnLevelObjectPeriodically(lo, period));
             }
         }
 
@@ -190,7 +286,7 @@ namespace Assets.Scripts.Game
         {
             var brick = t.gameObject.GetComponent<Brick>();
             var (i, j) = WorldToGrid(t.position);
-            _level[i, j] = LevelObject.Brick;
+            _levelObjects[i, j] = LevelObject.Brick;
             brick.ICoord = i;
             brick.JCoord = j;
             _bricks.Add(brick);
@@ -198,24 +294,33 @@ namespace Assets.Scripts.Game
 
         public void MovePlayer(Direction d)
         {
+            if (!HasGameStarted)
+            {
+                return;
+            }
+
             bool canMove = false;
 
             switch (d)
             {
                 case Direction.Left:
                 {
-                    if (_level[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
-                        (_level[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _level[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
                     else 
-                    if(_level[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
-                            (_level[_playerI + 1, _playerJ - 1].Equals(LevelObject.Brick) || _level[_playerI - 1, _playerJ - 1].Equals(LevelObject.Brick)))
+                    if(_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
+                            (_levelObjects[_playerI + 1, _playerJ - 1].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
-                    else if (_level[_playerI, _playerJ - 1].Equals(LevelObject.Fire))
+                    else if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Fire))
+                    {
+                        canMove = true;
+                    }
+                    else if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Spice))
                     {
                         canMove = true;
                     }
@@ -229,18 +334,22 @@ namespace Assets.Scripts.Game
                 }
                 case Direction.Right:
                 {
-                    if (_level[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
-                        (_level[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _level[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
                     else
-                    if (_level[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
-                        (_level[_playerI + 1, _playerJ + 1].Equals(LevelObject.Brick) || _level[_playerI - 1, _playerJ + 1].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI + 1, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ + 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
-                    else if (_level[_playerI, _playerJ + 1].Equals(LevelObject.Fire))
+                    else if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Fire))
+                    {
+                        canMove = true;
+                    }
+                    else if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Spice))
                     {
                         canMove = true;
                     }
@@ -254,18 +363,22 @@ namespace Assets.Scripts.Game
                 }
                 case Direction.Up:
                 {
-                    if (_level[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_level[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _level[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
                     else
-                    if (_level[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_level[_playerI - 1, _playerJ + 1].Equals(LevelObject.Brick) || _level[_playerI - 1, _playerJ - 1].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI - 1, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
-                    else if (_level[_playerI - 1, _playerJ].Equals(LevelObject.Fire))
+                    else if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Fire))
+                    {
+                        canMove = true;
+                    }
+                    else if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Spice))
                     {
                         canMove = true;
                     }
@@ -279,18 +392,22 @@ namespace Assets.Scripts.Game
                 }
                 case Direction.Down:
                 {
-                    if (_level[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_level[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _level[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
                     else
-                    if (_level[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_level[_playerI + 1, _playerJ + 1].Equals(LevelObject.Brick) || _level[_playerI + 1, _playerJ - 1].Equals(LevelObject.Brick)))
+                    if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
+                        (_levelObjects[_playerI + 1, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI + 1, _playerJ - 1].Equals(LevelObject.Brick)))
                     {
                         canMove = true;
                     }
-                    else if (_level[_playerI + 1, _playerJ].Equals(LevelObject.Fire))
+                    else if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Fire))
+                    {
+                        canMove = true;
+                    }
+                    else if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Spice))
                     {
                         canMove = true;
                     }

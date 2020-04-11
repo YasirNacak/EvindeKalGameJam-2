@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace Assets.Scripts.GUI
 {
@@ -17,19 +16,10 @@ namespace Assets.Scripts.GUI
                 Debug.LogWarning("Double Initializing GUI Panel");
                 return;
             }
-
-            IsInitialized = true;
-        }
-
-        private void ForceInitialize()
-        {
-            Assert.IsTrue(IsInitialized, "GUIPanel Is Not Initialized.");
         }
 
         public virtual void Open()
         {
-            ForceInitialize();
-
             // safety sleep, will be removed
             Thread.Sleep(150);
 
@@ -42,8 +32,6 @@ namespace Assets.Scripts.GUI
 
         public virtual void Close()
         {
-            ForceInitialize();
-
             // safety sleep, will be removed
             Thread.Sleep(150);
 

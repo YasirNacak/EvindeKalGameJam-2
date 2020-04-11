@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Assets.Scripts.Game;
 using UnityEngine;
 
 namespace Assets.Scripts.GUI.Panels
@@ -6,10 +7,18 @@ namespace Assets.Scripts.GUI.Panels
     public class MainMenuPanel : GUIPanel
     {
         public GameObject TitleText;
+        public GameObject PlayButton;
+        public GameObject PlayText;
 
         private RectTransform TitleTextRectTransform;
+        private RectTransform PlayButtonRectTransform;
+        private RectTransform PlayTextRectTransform;
 
         private float TitleTextDefaultY;
+        private float PlayButtonDefaultY;
+        private float PlayTextDefaultY;
+
+        public Vector3 PlayButtonSmallScale;
 
         public void Awake()
         {
@@ -18,45 +27,63 @@ namespace Assets.Scripts.GUI.Panels
 
         public override void Initialize()
         {
-            base.Initialize();
-
             TitleTextRectTransform = TitleText.GetComponent<RectTransform>();
+            PlayButtonRectTransform = PlayButton.GetComponent<RectTransform>();
+            PlayTextRectTransform = PlayText.GetComponent<RectTransform>();
 
             TitleTextDefaultY = TitleTextRectTransform.anchoredPosition.y;
+            PlayButtonDefaultY = PlayButtonRectTransform.anchoredPosition.y;
+            PlayTextDefaultY = PlayTextRectTransform.anchoredPosition.y;
 
-            InnerObjects = new List<GameObject> { TitleText };
+            InnerObjects = new List<GameObject> { TitleText, PlayButton, PlayText };
 
             IsInitialized = true;
         }
 
         public override void Open()
         {
-            LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY+ 700, 0);
+            LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY + 1200, 0);
+            LeanTween.moveY(PlayButtonRectTransform, PlayButtonDefaultY - 1200, 0);
+            LeanTween.moveY(PlayTextRectTransform, PlayTextDefaultY - 1200, 0);
             LeanTween.move(gameObject, gameObject.transform.position, 0).setOnComplete(() =>
             {
-                GUIManager.Instance.OpenDarkTint(true);
                 base.Open();
                 LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
+                LeanTween.moveY(PlayButtonRectTransform, PlayButtonDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
+                LeanTween.moveY(PlayTextRectTransform, PlayTextDefaultY, GUIManager.Instance.TransitionTime).setEaseOutSine();
             });
         }
 
         public override void Close()
         {
-            LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY + 700, GUIManager.Instance.TransitionTime).setEaseInSine();
-            GUIManager.Instance.CloseDarkTint(true);
+            LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY + 1200, GUIManager.Instance.TransitionTime).setEaseInSine();
+            LeanTween.moveY(PlayButtonRectTransform, PlayButtonDefaultY - 1200, GUIManager.Instance.TransitionTime).setEaseInSine();
+            LeanTween.moveY(PlayTextRectTransform, PlayTextDefaultY - 1200, GUIManager.Instance.TransitionTime).setEaseInSine();
             LeanTween.move(gameObject, gameObject.transform.position, GUIManager.Instance.TransitionWaitTime).setOnComplete(() =>
             {
                 base.Close();
                 LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY, 0);
+                LeanTween.moveY(PlayButtonRectTransform, PlayButtonDefaultY, 0);
+                LeanTween.moveY(PlayTextRectTransform, PlayTextDefaultY, 0);
             });
         }
 
         public void OnPlayButtonClicked()
         {
-            /*
             Close();
             GUIManager.Instance.OpenPanel(GUIManager.Instance.InGamePanel);
-            */
+            GameManager.Instance.StartGame();
+
+            
+        }
+        public void OnPlayButtonPointerDown()
+        {
+            LeanTween.scale(PlayButtonRectTransform, PlayButtonSmallScale, 0.1f).setEaseInBack();
+        }
+
+        public void OnPlayButtonPointerUp()
+        {
+            LeanTween.scale(PlayButtonRectTransform, Vector3.one, 0.1f).setEaseInBack();
         }
     }
 }
