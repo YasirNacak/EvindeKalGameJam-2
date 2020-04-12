@@ -114,6 +114,7 @@ namespace Assets.Scripts.GUI.Panels
         public void OnRetryButtonClicked()
         {
             Close();
+            GUIManager.Instance.ClosePanel(GUIManager.Instance.InGamePanel);
             GameManager.Instance.EndLevel(false);
         }
         public void OnRetryButtonPointerDown()

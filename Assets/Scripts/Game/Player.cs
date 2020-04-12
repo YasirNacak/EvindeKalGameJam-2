@@ -14,23 +14,6 @@ namespace Assets.Scripts.Game
             {
                 GameManager.Instance.Move(GameManager.Direction.Right);
             }
-
-            if (Input.GetKeyDown(KeyCode.A))
-            {
-                GameManager.Instance.MovePlayer(GameManager.Direction.Left);
-            }
-            else if (Input.GetKeyDown(KeyCode.D))
-            {
-                GameManager.Instance.MovePlayer(GameManager.Direction.Right);
-            }
-            else if (Input.GetKeyDown(KeyCode.W))
-            {
-                GameManager.Instance.MovePlayer(GameManager.Direction.Up);
-            }
-            else if (Input.GetKeyDown(KeyCode.S))
-            {
-                GameManager.Instance.MovePlayer(GameManager.Direction.Down);
-            }
         }
     }
 }

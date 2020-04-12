@@ -78,6 +78,7 @@ namespace Assets.Scripts.GUI.Panels
             LeanTween.move(gameObject, gameObject.transform.position, GUIManager.Instance.TransitionWaitTime).setOnComplete(() =>
             {
                 base.Close();
+                PlayButton.GetComponent<Image>().sprite = PlayButtonStages[0];
                 LeanTween.moveY(TitleTextRectTransform, TitleTextDefaultY, 0);
                 LeanTween.moveY(PlayButtonRectTransform, PlayButtonDefaultY, 0);
                 LeanTween.moveY(PlayTextRectTransform, PlayTextDefaultY, 0);
@@ -117,6 +118,7 @@ namespace Assets.Scripts.GUI.Panels
 
         public void OnHowToPlayButtonClicked()
         {
+            _clicks = 0;
             GUIManager.Instance.OpenPanel(GUIManager.Instance.HowToPlayPanel);
         }
 

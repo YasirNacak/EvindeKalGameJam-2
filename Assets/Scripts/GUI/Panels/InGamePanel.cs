@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using Assets.Scripts.Game;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -111,6 +112,16 @@ namespace Assets.Scripts.GUI.Panels
                 LeanTween.moveY(_spicesMeterDarkRectTransform, _spicesMeterDarkDefaultY, 0);
                 LeanTween.moveY(_countdownRectTransform, _countdownDefaultY, 0);
             });
+        }
+
+        public void OnMoveLeftButtonClicked()
+        {
+            GameManager.Instance.Move(GameManager.Direction.Left);
+        }
+
+        public void OnMoveRightButtonClicked()
+        {
+            GameManager.Instance.Move(GameManager.Direction.Right);
         }
 
         public void StartTimerAnimation()

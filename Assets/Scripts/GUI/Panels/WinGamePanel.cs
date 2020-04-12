@@ -95,9 +95,9 @@ namespace Assets.Scripts.GUI.Panels
 
         private void AnimateSingleChefHat(int index)
         {
-            LeanTween.scale(ChefHats[index], new Vector3(1.2f, 1.2f, 1.0f), 0.35f).setEaseOutBack().setOnComplete(() =>
+            LeanTween.scale(ChefHats[index], new Vector3(1.1f, 1.1f, 1.0f), 0.35f).setEaseOutBack().setOnComplete(() =>
             {
-                LeanTween.scale(ChefHats[index], Vector3.one, 0.35f).setEaseInBack();
+                LeanTween.scale(ChefHats[index], new Vector3(0.85f, 0.85f, 1.0f), 0.35f).setEaseInBack();
             });
             LeanTween.value(gameObject, 0.5f, 1.0f, 0.35f).setOnUpdate((float val) =>
             {
@@ -110,7 +110,10 @@ namespace Assets.Scripts.GUI.Panels
         public void OnNextLevelButtonClicked()
         {
             Close();
-            GameManager.Instance.EndLevel(true);
+            LeanTween.scale(gameObject, Vector3.one, GUIManager.Instance.TransitionWaitTime).setOnComplete(() =>
+            {
+                GameManager.Instance.EndLevel(true);
+            });
         }
         public void OnNextLevelButtonPointerDown()
         {

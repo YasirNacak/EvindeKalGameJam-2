@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Numerics;
 using Assets.Scripts.GUI;
 using Assets.Scripts.GUI.Panels;
 using UnityEngine;
@@ -100,6 +99,7 @@ namespace Assets.Scripts.Game
             _spawnedObjects = new List<SpawnedObject>();
             _spawnedObjects = new List<SpawnedObject>();
             Player.gameObject.SetActive(false);
+            LeanTween.rotate(Player.gameObject, Vector3.zero, 0.0f);
             GUIManager.Instance.InGamePanel.ClockMeter.transform.eulerAngles = new Vector3(0, 0, 90.75f);
             GUIManager.Instance.InGamePanel.SpicesMeter.GetComponent<Image>().fillAmount = 0.0f;
             GUIManager.Instance.InGamePanel.Countdown.GetComponent<Text>().color = GUIManager.Instance.InGamePanel.CountdownDefaultColor;
@@ -117,6 +117,7 @@ namespace Assets.Scripts.Game
             {
                 LeanTween.moveY(level.gameObject, -150, 0.25f).setEaseInSine().setOnComplete(() =>
                 {
+                    GUIManager.Instance.OpenPanel(GUIManager.Instance.InGamePanel);
                     if (isAdvanced)
                     {
                         if (_currentLevel < Levels.Count - 1)
@@ -327,7 +328,7 @@ namespace Assets.Scripts.Game
                         {
                             var spiceIndex = Random.Range(0, SpicePrefabs.Count);
                             prefab = SpicePrefabs[spiceIndex];
-                            aliveSeconds = 2.0f;
+                            aliveSeconds = 3.0f;
                             _levelObjects[currentI + deltaI, currentJ + deltaJ] = LevelObject.Spice;
                             break;
                         }
@@ -403,7 +404,7 @@ namespace Assets.Scripts.Game
                 LeanTween.rotate(Player.gameObject, new Vector3(0, 0, ms.ZRotation), 0.1f).setEaseOutSine();
                 LeanTween.move(Player.gameObject, new Vector3(playerPos.x + ms.IMovement * 8, playerPos.y + ms.JMovement * 8, playerPos.z), 0.1f).setEaseOutSine();
                 _playerMovementIndex++;
-                if (_playerMovementIndex >= Levels[_currentLevel].Movement.Count - 1)
+                if (_playerMovementIndex >= Levels[_currentLevel].Movement.Count)
                 {
                     _playerMovementIndex = 0;
                 }
@@ -440,144 +441,6 @@ namespace Assets.Scripts.Game
 
                 _playerJ += -ms.IMovement;
                 _playerI -= -ms.JMovement;
-            }
-
-            print("pyerI: " + _playerI);
-            print("pyerJ: " + _playerJ);
-        }
-
-        public void MovePlayer(Direction d)
-        {
-            if (!HasGameStarted)
-            {
-                return;
-            }
-
-            bool canMove = true;
-
-            switch (d)
-            {
-                case Direction.Left:
-                {
-                    /*if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else 
-                    if(_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Empty) &&
-                            (_levelObjects[_playerI + 1, _playerJ - 1].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ - 1].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Fire))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Spice))
-                    {
-                        canMove = true;
-                    }*/
-
-                    if (canMove)
-                    {
-                        LeanTween.moveLocalX(Player.gameObject, Player.transform.position.x - 8, 0.070f);
-                        _playerJ--;
-                    }
-                    break;
-                }
-                case Direction.Right:
-                {
-                    /*if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else
-                    if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI + 1, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ + 1].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Fire))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Spice))
-                    {
-                        canMove = true;
-                    }*/
-
-                    if (canMove)
-                    {
-                        LeanTween.moveLocalX(Player.gameObject, Player.transform.position.x + 8, 0.070f);
-                        _playerJ++;
-                    }
-                    break;
-                }
-                case Direction.Up:
-                {
-                    /*if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else
-                    if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI - 1, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI - 1, _playerJ - 1].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Fire))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI - 1, _playerJ].Equals(LevelObject.Spice))
-                    {
-                        canMove = true;
-                    }*/
-
-                    if (canMove)
-                    {
-                        LeanTween.moveLocalY(Player.gameObject, Player.transform.position.y + 8, 0.070f);
-                        _playerI--;
-                    }
-                    break;
-                }
-                case Direction.Down:
-                {
-                    /*if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI, _playerJ - 1].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else
-                    if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Empty) &&
-                        (_levelObjects[_playerI + 1, _playerJ + 1].Equals(LevelObject.Brick) || _levelObjects[_playerI + 1, _playerJ - 1].Equals(LevelObject.Brick)))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Fire))
-                    {
-                        canMove = true;
-                    }
-                    else if (_levelObjects[_playerI + 1, _playerJ].Equals(LevelObject.Spice))
-                    {
-                        canMove = true;
-                    }*/
-
-                    if (canMove)
-                    {
-                        LeanTween.moveLocalY(Player.gameObject, Player.transform.position.y - 8, 0.070f);
-                        _playerI++;
-                    }
-                    break;
-                }
-                default:
-                {
-                    Debug.LogError("Invalid Direction");
-                    break;
-                }
             }
         }
     }
