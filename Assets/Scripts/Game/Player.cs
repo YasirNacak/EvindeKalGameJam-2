@@ -6,6 +6,15 @@ namespace Assets.Scripts.Game
     {
         void Update()
         {
+            if (Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                GameManager.Instance.Move(GameManager.Direction.Left);
+            }
+            else if (Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                GameManager.Instance.Move(GameManager.Direction.Right);
+            }
+
             if (Input.GetKeyDown(KeyCode.A))
             {
                 GameManager.Instance.MovePlayer(GameManager.Direction.Left);

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using Assets.Scripts.GUI;
 using Assets.Scripts.GUI.Panels;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Assets.Scripts.Game
 {
@@ -58,6 +60,8 @@ namespace Assets.Scripts.Game
 
         private float _levelTimer;
 
+        private int _playerMovementIndex;
+
         public void Awake()
         {
             if (Instance != null && Instance != this)
@@ -89,6 +93,7 @@ namespace Assets.Scripts.Game
         public void ResetGame()
         {
             HasGameStarted = false;
+            _playerMovementIndex = 0;
             _cookedPoints = 0;
             _spicePoints = 0;
             _levelTimer = Levels[_currentLevel].TimeLimit;
@@ -380,6 +385,65 @@ namespace Assets.Scripts.Game
             brick.ICoord = i;
             brick.JCoord = j;
             _bricks.Add(brick);
+        }
+
+        public void Move(Direction d)
+        {
+            
+            var playerPos = Player.transform.position;
+
+            if (d.Equals(Direction.Right))
+            {
+                var ind = _playerMovementIndex;
+                if (ind == Levels[_currentLevel].Movement.Count)
+                {
+                    ind = 0;
+                }
+                var ms = Levels[_currentLevel].Movement[ind];
+                LeanTween.rotate(Player.gameObject, new Vector3(0, 0, ms.ZRotation), 0.1f).setEaseOutSine();
+                LeanTween.move(Player.gameObject, new Vector3(playerPos.x + ms.IMovement * 8, playerPos.y + ms.JMovement * 8, playerPos.z), 0.1f).setEaseOutSine();
+                _playerMovementIndex++;
+                if (_playerMovementIndex >= Levels[_currentLevel].Movement.Count - 1)
+                {
+                    _playerMovementIndex = 0;
+                }
+
+                _playerJ += ms.IMovement;
+                _playerI -= ms.JMovement;
+            }
+            else if (d.Equals(Direction.Left))
+            {
+                int ind1 = _playerMovementIndex - 1;
+                if (ind1 == -1)
+                {
+                    ind1 = Levels[_currentLevel].Movement.Count - 1;
+                }
+
+                int ind2 = _playerMovementIndex - 2;
+                if (ind2 == -1)
+                {
+                    ind2 = Levels[_currentLevel].Movement.Count - 1;
+                }
+                if (ind2 == -2)
+                {
+                    ind2 = Levels[_currentLevel].Movement.Count - 2;
+                }
+                var ms = Levels[_currentLevel].Movement[ind1];
+                var msRot = Levels[_currentLevel].Movement[ind2];
+                LeanTween.rotate(Player.gameObject, new Vector3(0, 0, msRot.ZRotation), 0.1f).setEaseOutSine();
+                LeanTween.move(Player.gameObject, new Vector3(playerPos.x + (-ms.IMovement) * 8, playerPos.y + (-ms.JMovement) * 8, playerPos.z), 0.1f).setEaseOutSine();
+                _playerMovementIndex--;
+                if (_playerMovementIndex == -1)
+                {
+                    _playerMovementIndex = Levels[_currentLevel].Movement.Count - 1;
+                }
+
+                _playerJ += -ms.IMovement;
+                _playerI -= -ms.JMovement;
+            }
+
+            print("pyerI: " + _playerI);
+            print("pyerJ: " + _playerJ);
         }
 
         public void MovePlayer(Direction d)

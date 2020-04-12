@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace Assets.Scripts.Game
 {
@@ -7,5 +8,6 @@ namespace Assets.Scripts.Game
         public GameObject Bricks;
         public GameObject LevelSprite;
         public float TimeLimit;
+        public List<MovementStyle> Movement;
     }
 }

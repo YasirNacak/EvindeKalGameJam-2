@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Assets.Scripts.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -86,10 +87,14 @@ namespace Assets.Scripts.GUI.Panels
 
         public void OnPlayButtonClicked()
         {
-            _clicks++;
+            if (_clicks < 3)
+            {
+                _clicks++;
+            }
 
             if (_clicks == 3)
             {
+                _clicks = 0;
                 Close();
                 GUIManager.Instance.OpenPanel(GUIManager.Instance.InGamePanel);
                 GameManager.Instance.StartGame();
