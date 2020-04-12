@@ -110,6 +110,7 @@ namespace Assets.Scripts.GUI.Panels
         public void OnNextLevelButtonClicked()
         {
             Close();
+            GUIManager.Instance.ClosePanel(GUIManager.Instance.InGamePanel);
             LeanTween.scale(gameObject, Vector3.one, GUIManager.Instance.TransitionWaitTime).setOnComplete(() =>
             {
                 GameManager.Instance.EndLevel(true);
